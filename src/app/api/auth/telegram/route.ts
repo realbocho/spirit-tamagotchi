@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 // src/app/api/auth/telegram/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { validateTelegramInitData, generateReferralCode } from '@/lib/telegram-auth'
