@@ -1,5 +1,4 @@
 'use client'
-// src/app/page.tsx
 import { useEffect, useCallback, useState } from 'react'
 import { useAppStore } from '@/lib/store'
 import { TelegramUser } from '@/types'
@@ -22,11 +21,30 @@ declare global {
         MainButton: { hide: () => void }
         colorScheme: string
         viewportHeight: number
-        viewportStableHeight: number
         platform: string
       }
     }
   }
+}
+
+// Telegram WebApp SDK가 주입될 때까지 최대 3초 대기
+function waitForTelegram(timeout = 3000): Promise<typeof window.Telegram.WebApp | null> {
+  return new Promise((resolve) => {
+    if (window.Telegram?.WebApp?.initData !== undefined) {
+      resolve(window.Telegram.WebApp)
+      return
+    }
+    const interval = setInterval(() => {
+      if (window.Telegram?.WebApp?.initData !== undefined) {
+        clearInterval(interval)
+        resolve(window.Telegram.WebApp)
+      }
+    }, 100)
+    setTimeout(() => {
+      clearInterval(interval)
+      resolve(window.Telegram?.WebApp || null)
+    }, timeout)
+  })
 }
 
 export default function Home() {
@@ -43,27 +61,28 @@ export default function Home() {
     setLoading(true)
     setInitError(null)
     try {
-      // Get or generate device UUID
       let devId = deviceUuid
       if (!devId) {
         devId = uuidv4()
         useAppStore.getState().setDeviceUuid(devId)
       }
 
-      // Init Telegram WebApp
-      const tg = window.Telegram?.WebApp
+      // Telegram WebApp SDK 로드 대기
+      const tg = await waitForTelegram()
+
+      console.log('[page] tg:', !!tg, 'initData:', tg?.initData?.length, 'user:', tg?.initDataUnsafe?.user?.id)
+
       if (tg) {
-        tg.ready()
-        tg.expand()
-        tg.setBackgroundColor('#0D0A0B')
-        tg.setHeaderColor('#0D0A0B')
+        try { tg.ready() } catch {}
+        try { tg.expand() } catch {}
+        try { tg.setBackgroundColor('#0D0A0B') } catch {}
+        try { tg.setHeaderColor('#0D0A0B') } catch {}
         try { tg.enableClosingConfirmation() } catch {}
         try { tg.MainButton.hide() } catch {}
       }
 
       const initData = tg?.initData || ''
-      const tgUser   = tg?.initDataUnsafe?.user
-      // startapp ref code (from t.me/bot?startapp=ref_XXXX)
+      const tgUser   = tg?.initDataUnsafe?.user || null
       const startParam = tg?.initDataUnsafe?.start_param || ''
       const refCode = startParam.startsWith('ref_')
         ? startParam.replace('ref_', '')
@@ -71,7 +90,6 @@ export default function Home() {
 
       if (tgUser) setTelegramUser(tgUser)
 
-      // Auth with server
       const res = await fetch('/api/auth/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,26 +97,16 @@ export default function Home() {
       })
 
       const data = await res.json()
+      console.log('[page] auth response:', res.status, data?.error, data?.debug)
 
-      if (!res.ok) {
-        // Dev/browser fallback: if no initData (opened in browser, not Telegram)
-        // create a guest session so the app is usable during development
-        if (!initData && process.env.NODE_ENV === 'development') {
-          console.warn('No Telegram initData — dev mode, skipping auth')
-          setLoading(false)
-          return
-        }
-        throw new Error(data.error || `Auth failed (${res.status})`)
-      }
+      if (!res.ok) throw new Error(data.error || `Auth failed (${res.status})`)
 
       setUser(data.user)
 
-      // Load pets + fortune in parallel
       const [petsRes, fortuneRes] = await Promise.all([
         fetch(`/api/pets?user_id=${data.user.id}`),
         fetch(`/api/fortune?user_id=${data.user.id}`),
       ])
-
       const [petsData, fortuneData] = await Promise.all([
         petsRes.json(),
         fortuneRes.json(),
@@ -109,11 +117,10 @@ export default function Home() {
         const alive = petsData.pets.find((p: any) => p.status === 'alive') || petsData.pets[0]
         setActivePet(alive)
       }
-
       if (fortuneData.fortune) setTodayFortune(fortuneData.fortune)
 
     } catch (err: any) {
-      console.error('Init error:', err)
+      console.error('[page] init error:', err)
       setInitError(err.message || 'Connection failed')
     } finally {
       setLoading(false)
@@ -124,27 +131,20 @@ export default function Home() {
     initApp()
   }, [initApp])
 
-  // Loading
   if (isLoading) return <LoadingScreen />
 
-  // Error state — show retry instead of infinite loading
   if (initError || !user) {
     return (
       <div className="fixed inset-0 bg-ink flex flex-col items-center justify-center gap-6 px-6 text-center">
         <div className="font-cjk text-4xl text-gold/40">靈</div>
         <div>
           <p className="text-paper text-sm font-display mb-1">Connection failed</p>
-          <p className="text-smoke/60 text-xs">{initError || 'Could not connect to spirit realm'}</p>
+          <p className="text-smoke/60 text-xs">{initError || 'Could not connect'}</p>
           {!window?.Telegram?.WebApp?.initData && (
-            <p className="text-smoke/40 text-xs mt-2">
-              Open this app inside Telegram to play
-            </p>
+            <p className="text-smoke/40 text-xs mt-2">Open this app inside Telegram</p>
           )}
         </div>
-        <button
-          onClick={() => setRetryCount(c => c + 1)}
-          className="btn-ritual px-8 text-sm"
-        >
+        <button onClick={() => setRetryCount(c => c + 1)} className="btn-ritual px-8 text-sm">
           Retry 再試
         </button>
       </div>
