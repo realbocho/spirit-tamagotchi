@@ -3,6 +3,7 @@
 // Schedule: 0 0 * * * (midnight UTC)
 // URL: POST https://your-app.vercel.app/api/cron/unlock
 // Header: x-cron-secret: YOUR_CRON_SECRET
+export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
