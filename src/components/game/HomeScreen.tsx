@@ -77,7 +77,7 @@ export default function HomeScreen() {
       const res = await fetch(`/api/pets/${activePet.id}/claim`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ userId: user.id, clientMined: minedAmount }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
