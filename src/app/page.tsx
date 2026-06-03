@@ -75,7 +75,7 @@ export default function Home() {
       const res = await fetch('/api/auth/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, deviceUuid: devId, referralCode: refCode }),
+        body: JSON.stringify({ initData, deviceUuid: devId, referralCode: refCode, tgUser }),
       })
 
       const data = await res.json()
