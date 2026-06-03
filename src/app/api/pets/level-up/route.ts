@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 // src/app/api/pets/level-up/route.ts
 // Called when a pet accumulates enough XP; spends $MUDANG to level up
 import { NextRequest, NextResponse } from 'next/server'
