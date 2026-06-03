@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 // src/app/api/pets/transcend/route.ts
 // 천도재(薦度齋) — voluntary pet burn → karma points → better gacha odds
 import { NextRequest, NextResponse } from 'next/server'
