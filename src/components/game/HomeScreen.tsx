@@ -274,6 +274,24 @@ export default function HomeScreen() {
         </div>
       </div>
 
+
+      {/* Guide Banner */}
+      <div className="w-full max-w-xs mt-4 mb-2">
+        <a
+          href="/guide"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block card-ritual p-4 border-gold/20 hover:border-gold/40 transition-all active:scale-95"
+        >
+          <div className="flex items-center gap-3">
+            <div className="font-cjk text-2xl text-gold/60">運命</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-paper text-xs font-semibold">How to earn real TON</div>
+              <div className="text-smoke/60 text-xs mt-0.5">ROI guide · Crisis strategy · Tips →</div>
+            </div>
+          </div>
+        </a>
+      </div>
       {/* Crisis Modal */}
       <AnimatePresence>
         {showPetDetail && (
