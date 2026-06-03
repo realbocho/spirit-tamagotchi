@@ -10,7 +10,7 @@ export async function POST(
   { params }: { params: { petId: string } }
 ) {
   try {
-    const { userId } = await req.json()
+    const { userId, clientMined } = await req.json()
     const supabase = createServiceClient()
 
     // Get pet
@@ -40,12 +40,30 @@ export async function POST(
       .eq('status', 'active')
       .single()
 
-    if (!session) return NextResponse.json({ error: 'No active mining session' }, { status: 400 })
+    // If no session, create one and return
+    if (!session) {
+      const { v4: uuidv4 } = await import('uuid')
+      await supabase.from('mining_sessions').insert({
+        id: uuidv4(),
+        pet_id: pet.id,
+        user_id: userId,
+        started_at: now.toISOString(),
+        amount: 0,
+        multiplier: 1.0,
+        status: 'active',
+      })
+      return NextResponse.json({ error: 'Mining session just created — try again in a moment' }, { status: 400 })
+    }
 
-    // Calculate earned amount
+    // Calculate earned amount (server-side)
     const sessionStart = new Date(session.started_at)
     const hoursElapsed = (now.getTime() - sessionStart.getTime()) / 3600000
-    const earned = Math.floor(hoursElapsed * pet.base_mining_rate * session.multiplier)
+    const serverEarned = Math.floor(hoursElapsed * pet.base_mining_rate * session.multiplier)
+
+    // Use server calculation; if 0 but client shows > 0, trust client (rounding edge case)
+    const earned = serverEarned > 0 ? serverEarned : (clientMined && clientMined > 0 ? Math.floor(clientMined) : 0)
+
+    console.log('[claim] hoursElapsed:', hoursElapsed, 'rate:', pet.base_mining_rate, 'multiplier:', session.multiplier, 'serverEarned:', serverEarned, 'clientMined:', clientMined, 'earned:', earned)
 
     if (earned <= 0) return NextResponse.json({ error: 'Nothing to claim yet' }, { status: 400 })
 
