@@ -1,4 +1,6 @@
 // src/app/api/fortune/route.ts
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { calculateDailyFortune } from '@/lib/fortune-engine'
