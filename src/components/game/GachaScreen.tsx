@@ -81,7 +81,7 @@ export default function GachaScreen() {
           messages: [{
             address: process.env.NEXT_PUBLIC_TREASURY_ADDRESS!,
             amount: toNano(egg.priceTon).toString(),
-            payload: btoa(`egg:${egg.type}:${user.id}`),
+            payload: Buffer.from(JSON.stringify({op:"egg",type:egg.type,userId:user.id})).toString("base64"),
           }],
         })
         txHash = result.boc
