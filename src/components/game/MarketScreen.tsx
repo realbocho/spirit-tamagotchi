@@ -43,7 +43,7 @@ export default function MarketScreen() {
         messages: [{
           address: process.env.NEXT_PUBLIC_TREASURY_ADDRESS!,
           amount: toNano(listing.price_ton).toString(),
-          payload: '', // op: buy NFT
+          
         }],
       })
 
