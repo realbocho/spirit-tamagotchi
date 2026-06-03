@@ -90,8 +90,16 @@ export default function HomeScreen() {
         total_mined: activePet.total_mined + data.claimed,
         current_level: data.new_level || activePet.current_level,
       })
+      // Update in-game balance in store
+      if (user) {
+        useAppStore.getState().setUser({
+          ...user,
+          mudang_balance: (user.mudang_balance || 0) + data.claimed,
+          total_earned: (user.total_earned || 0) + data.claimed,
+        })
+      }
       setMinedAmount(0)
-      setSessionStartedAt(Date.now())  // restart counter from now
+      setSessionStartedAt(Date.now())
     } catch (err: any) {
       toast.error(err.message || 'Failed to claim')
     } finally {
