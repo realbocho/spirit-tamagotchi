@@ -78,10 +78,13 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'mudang-app-store',
+      // Only persist UI preferences + device ID, NOT user/balance/pets
+      // (balance/pets always loaded fresh from DB on app init)
       partialize: (state) => ({
         tutorialComplete: state.tutorialComplete,
         tutorialStep: state.tutorialStep,
         deviceUuid: state.deviceUuid,
+        activeTab: state.activeTab,
       }),
     }
   )
