@@ -31,7 +31,7 @@ export default function CrisisModal({ pet, onClose }: Props) {
         messages: [{
           address: process.env.NEXT_PUBLIC_TREASURY_ADDRESS!,
           amount: toNano(TALISMAN_PRICE_TON).toString(),
-          payload: btoa(`talisman:${pet.id}:${user.id}`),
+          payload: Buffer.from(JSON.stringify({op:"talisman",petId:pet.id,userId:user.id})).toString("base64"),
         }],
       })
 
