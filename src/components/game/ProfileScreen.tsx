@@ -75,6 +75,13 @@ export default function ProfileScreen() {
       })
 
       toast.success(`Withdrawal of ${totalAmount.toLocaleString()} $MUD initiated! Processing on-chain.`)
+      // Deduct from store balance immediately
+      if (user) {
+        useAppStore.getState().setUser({
+          ...user,
+          mudang_balance: Math.max(0, (user.mudang_balance || 0) - totalAmount),
+        })
+      }
       await fetchWithdrawals()
     } catch (err: any) {
       toast.error(err.message || 'Withdrawal failed')
