@@ -31,21 +31,37 @@ export default function HomeScreen() {
   const [isClaiming, setIsClaiming] = useState(false)
   const [showCrisis, setShowCrisis] = useState(false)
   const [showPetDetail, setShowPetDetail] = useState(false)
-  const [sessionStart] = useState(Date.now())
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
 
-  // Real-time mining counter
+  // Fetch active mining session start time from DB on mount
   useEffect(() => {
-    if (!activePet || activePet.status !== 'alive') return
+    if (!activePet || !user) return
+    fetch(`/api/pets/session?petId=${activePet.id}&userId=${user.id}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.started_at) {
+          setSessionStartedAt(new Date(d.started_at).getTime())
+        } else {
+          // No session yet — use now as fallback
+          setSessionStartedAt(Date.now())
+        }
+      })
+      .catch(() => setSessionStartedAt(Date.now()))
+  }, [activePet?.id, user?.id])
+
+  // Real-time mining counter — based on DB session start time
+  useEffect(() => {
+    if (!activePet || activePet.status !== 'alive' || sessionStartedAt === null) return
     const multiplier = todayFortune?.mining_multiplier || 1.0
     const ratePerMs = (activePet.base_mining_rate * multiplier) / 3600000
 
     const interval = setInterval(() => {
-      const elapsed = Date.now() - sessionStart
+      const elapsed = Date.now() - sessionStartedAt
       setMinedAmount(Math.floor(elapsed * ratePerMs))
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [activePet, todayFortune, sessionStart])
+  }, [activePet, todayFortune, sessionStartedAt])
 
   // Show crisis if pet is cursed
   useEffect(() => {
@@ -75,6 +91,7 @@ export default function HomeScreen() {
         current_level: data.new_level || activePet.current_level,
       })
       setMinedAmount(0)
+      setSessionStartedAt(Date.now())  // restart counter from now
     } catch (err: any) {
       toast.error(err.message || 'Failed to claim')
     } finally {
