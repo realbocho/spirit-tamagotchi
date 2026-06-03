@@ -1,0 +1,143 @@
+;; contracts/mudang_treasury.fc
+;; MudangTreasury - receives TON payments and distributes to pools
+;; Compile with: npx blueprint build
+
+#include "imports/stdlib.fc";
+
+;; Storage layout:
+;; owner_address:  MsgAddress
+;; ops_address:    MsgAddress  (30% ops fund recipient)
+;; reward_pool:    Coins        (accumulated reward pool)
+;; mudang_pool:    Coins        (accumulated for grand mudang holders)
+;; total_received: Coins
+
+global slice owner_address;
+global slice ops_address;
+global int   reward_pool;
+global int   mudang_pool;
+global int   total_received;
+
+() load_data() impure {
+    slice ds = get_data().begin_parse();
+    owner_address  = ds~load_msg_addr();
+    ops_address    = ds~load_msg_addr();
+    reward_pool    = ds~load_coins();
+    mudang_pool    = ds~load_coins();
+    total_received = ds~load_coins();
+}
+
+() save_data() impure {
+    set_data(begin_cell()
+        .store_slice(owner_address)
+        .store_slice(ops_address)
+        .store_coins(reward_pool)
+        .store_coins(mudang_pool)
+        .store_coins(total_received)
+    .end_cell());
+}
+
+;; op codes
+const int op::deposit        = 0x1;
+const int op::withdraw_ops   = 0x2;
+const int op::withdraw_pool  = 0x3;
+const int op::update_ops_addr = 0x4;
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    if (msg_value <= 0) { return (); }
+
+    slice cs    = in_msg_full.begin_parse();
+    int   flags = cs~load_uint(4);
+    if (flags & 1) { return (); }  ;; ignore bounced
+
+    slice sender = cs~load_msg_addr();
+
+    load_data();
+
+    ;; If no opcode, treat as plain deposit (egg purchase, talisman, etc.)
+    if (in_msg_body.slice_empty?()) {
+        ;; Auto-split: 60% reward pool, 30% ops, 10% mudang pool
+        int amount = msg_value;
+        int to_reward = amount * 60 / 100;
+        int to_ops    = amount * 30 / 100;
+        int to_mudang = amount - to_reward - to_ops;
+
+        reward_pool    += to_reward;
+        mudang_pool    += to_mudang;
+        total_received += amount;
+
+        ;; Forward ops portion immediately
+        send_raw_message(begin_cell()
+            .store_uint(0x10, 6)
+            .store_slice(ops_address)
+            .store_coins(to_ops)
+            .store_uint(0, 107)
+        .end_cell(), 1);  ;; mode 1: pay fees separately
+
+        save_data();
+        return ();
+    }
+
+    int op = in_msg_body~load_uint(32);
+
+    ;; Owner-only operations
+    throw_unless(401, equal_slices(sender, owner_address));
+
+    if (op == op::withdraw_pool) {
+        ;; Owner withdraws from reward pool
+        int withdraw_amount = in_msg_body~load_coins();
+        throw_unless(402, reward_pool >= withdraw_amount);
+        reward_pool -= withdraw_amount;
+
+        send_raw_message(begin_cell()
+            .store_uint(0x10, 6)
+            .store_slice(sender)
+            .store_coins(withdraw_amount)
+            .store_uint(0, 107)
+        .end_cell(), 1);
+
+        save_data();
+        return ();
+    }
+
+    if (op == op::withdraw_ops) {
+        ;; Withdraw accumulated mudang_pool to mudang holders (called by owner after computing shares off-chain)
+        int withdraw_amount = in_msg_body~load_coins();
+        slice recipient     = in_msg_body~load_msg_addr();
+        throw_unless(402, mudang_pool >= withdraw_amount);
+        mudang_pool -= withdraw_amount;
+
+        send_raw_message(begin_cell()
+            .store_uint(0x10, 6)
+            .store_slice(recipient)
+            .store_coins(withdraw_amount)
+            .store_uint(0, 107)
+        .end_cell(), 1);
+
+        save_data();
+        return ();
+    }
+
+    if (op == op::update_ops_addr) {
+        ops_address = in_msg_body~load_msg_addr();
+        save_data();
+        return ();
+    }
+
+    throw(0xffff);  ;; unknown op
+}
+
+;; Getters
+(slice, slice, int, int, int) get_treasury_data() method_id {
+    load_data();
+    return (owner_address, ops_address, reward_pool, mudang_pool, total_received);
+}
+
+int get_reward_pool() method_id {
+    load_data();
+    return reward_pool;
+}
+
+int get_mudang_pool() method_id {
+    load_data();
+    return mudang_pool;
+}

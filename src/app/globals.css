@@ -1,0 +1,163 @@
+/* src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #0D0A0B;
+  --ink-50: #1a1518;
+  --vermil: #C0392B;
+  --vermil-light: #E74C3C;
+  --jade: #1A7A4A;
+  --jade-light: #27AE60;
+  --gold: #D4AF37;
+  --gold-light: #F1C40F;
+  --smoke: #8E8082;
+  --paper: #F5ECD7;
+  --spirit: #7B2D8B;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--ink);
+  color: var(--paper);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--ink-50); }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+/* Safe area for mobile notch/home bar */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+@layer components {
+  /* Brushstroke divider */
+  .brush-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.4;
+  }
+
+  /* Gold accent card */
+  .card-ritual {
+    @apply bg-ink-50 border border-gold/20 rounded-2xl;
+    box-shadow: 0 0 0 1px rgba(212,175,55,0.05), inset 0 1px 0 rgba(212,175,55,0.08);
+  }
+
+  /* Vermilion button */
+  .btn-ritual {
+    @apply bg-vermil text-paper font-display font-semibold px-6 py-3 rounded-xl
+           transition-all duration-200 active:scale-95 hover:bg-vermil-light;
+    box-shadow: 0 0 20px rgba(192,57,43,0.3);
+  }
+
+  /* Gold outline button */
+  .btn-ghost {
+    @apply border border-gold/40 text-gold font-display px-6 py-3 rounded-xl
+           transition-all duration-200 active:scale-95 hover:border-gold hover:bg-gold/10;
+  }
+
+  /* Stat bar */
+  .stat-bar-bg {
+    @apply h-1.5 bg-ink rounded-full overflow-hidden;
+  }
+  .stat-bar-fill {
+    @apply h-full rounded-full transition-all duration-700;
+  }
+
+  /* Fortune badge */
+  .fortune-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-display;
+  }
+
+  /* Mining counter */
+  .mining-counter {
+    @apply font-mono text-gold-light tabular-nums;
+    text-shadow: 0 0 10px rgba(241,196,15,0.5);
+  }
+
+  /* Rarity border glow */
+  .rarity-common       { box-shadow: 0 0 0 1px rgba(142,128,130,0.3); }
+  .rarity-blessed      { box-shadow: 0 0 0 1px rgba(26,122,74,0.5), 0 0 20px rgba(26,122,74,0.1); }
+  .rarity-mudang       { box-shadow: 0 0 0 1px rgba(123,45,139,0.6), 0 0 25px rgba(123,45,139,0.2); }
+  .rarity-grand_mudang { box-shadow: 0 0 0 2px rgba(212,175,55,0.8), 0 0 40px rgba(212,175,55,0.3); }
+}
+
+/* Pet sprite — deterministic pixel art via CSS */
+.pet-sprite {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Cursed overlay shimmer */
+.curse-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(192,57,43,0.15) 0%,
+    transparent 50%,
+    rgba(192,57,43,0.15) 100%
+  );
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+
+/* Fortune score animation */
+@keyframes scoreReveal {
+  from { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.score-reveal {
+  animation: scoreReveal 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+/* Bottom nav */
+.bottom-nav-item {
+  @apply flex flex-col items-center gap-0.5 py-2 px-4 transition-all duration-150;
+}
+.bottom-nav-item.active .nav-icon   { @apply text-gold; }
+.bottom-nav-item.active .nav-label  { @apply text-gold; }
+.bottom-nav-item:not(.active) .nav-icon  { @apply text-smoke; }
+.bottom-nav-item:not(.active) .nav-label { @apply text-smoke; }
+
+/* ── Pet Sprite Animations ─────────────────────────── */
+@keyframes petFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
+@keyframes petShake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-3px) rotate(-3deg); }
+  40%      { transform: translateX(3px) rotate(3deg); }
+  60%      { transform: translateX(-2px) rotate(-2deg); }
+  80%      { transform: translateX(2px) rotate(2deg); }
+}
+@keyframes bellSwing {
+  0%, 100% { transform: rotate(-18deg); }
+  50%       { transform: rotate(18deg); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.18; }
+  50%       { opacity: 0.45; }
+}
+
+.animate-float       { animation: petFloat   2.6s ease-in-out infinite; }
+.animate-shake       { animation: petShake   0.45s ease-in-out infinite; }
+.animate-bell        { transform-origin: 50% 15%; animation: bellSwing 0.7s ease-in-out infinite; }
+.animate-pulse-glow  { animation: glowPulse  2.2s ease-in-out infinite; }
