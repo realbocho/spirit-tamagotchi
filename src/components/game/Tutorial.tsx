@@ -124,7 +124,7 @@ function BirthStep() {
 
       {/* Year */}
       <div className="mb-4">
-        <label className="text-smoke/70 text-xs block mb-1.5">Birth Year 년</label>
+        <label className="text-smoke/70 text-xs block mb-1.5">Birth Year</label>
         <div className="relative">
           <input
             type="number"
@@ -152,7 +152,7 @@ function BirthStep() {
             className="text-xs mt-1.5 ml-1"
             style={{ color: yearEl.color }}
           >
-            {yearEl.element} year · {yearEl.char}년
+            {yearEl.element} year · {yearEl.char}
           </motion.div>
         )}
       </div>
@@ -160,7 +160,7 @@ function BirthStep() {
       {/* Month + Day */}
       <div className="flex gap-3 mb-6">
         <div className="flex-1">
-          <label className="text-smoke/70 text-xs block mb-1.5">Month 월</label>
+          <label className="text-smoke/70 text-xs block mb-1.5">Month</label>
           <input
             type="number"
             value={month}
@@ -171,7 +171,7 @@ function BirthStep() {
           />
         </div>
         <div className="flex-1">
-          <label className="text-smoke/70 text-xs block mb-1.5">Day 일</label>
+          <label className="text-smoke/70 text-xs block mb-1.5">Day</label>
           <input
             type="number"
             value={day}
@@ -280,7 +280,7 @@ function Visual({ type }: { type: string }) {
   if (type === 'economy') {
     return (
       <div className="flex justify-center gap-4 my-6">
-        {[['60%', '보상풀', '#27AE60'], ['30%', '운영', '#3498DB'], ['10%', '大巫', '#D4AF37']].map(([pct, lbl, col]) => (
+        {[['60%', 'Reward Pool', '#27AE60'], ['30%', 'Operations', '#3498DB'], ['10%', 'Grand Mudang', '#D4AF37']].map(([pct, lbl, col]) => (
           <div key={lbl} className="text-center">
             <div className="text-xl font-mono font-bold" style={{ color: col }}>{pct}</div>
             <div className="text-smoke/60 text-xs mt-0.5 font-cjk">{lbl}</div>
