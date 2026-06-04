@@ -112,7 +112,13 @@ export default function HomeScreen() {
     : 0
 
   const lifetimeProgress = activePet
-    ? 1 - daysRemaining / 90
+    ? (() => {
+        const diesAt = new Date(activePet.dies_at).getTime()
+        const bornAt = new Date(activePet.born_at).getTime()
+        const total = diesAt - bornAt
+        const remaining = diesAt - Date.now()
+        return total > 0 ? Math.max(0, Math.min(1, 1 - remaining / total)) : 0
+      })()
     : 0
 
   if (!activePet) {
