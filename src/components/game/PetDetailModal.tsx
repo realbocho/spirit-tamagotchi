@@ -51,11 +51,16 @@ export default function PetDetailModal({ pet, onClose, onPetUpdated }: Props) {
 
   const now = Date.now()
   const diesAt = new Date(pet.dies_at).getTime()
-  const bornAt = new Date(pet.born_at).getTime()
-  const totalLifespan = diesAt - bornAt  // actual lifespan in ms
+  // born_at fallback: if missing, assume 90 days before dies_at
+  const bornAt = pet.born_at
+    ? new Date(pet.born_at).getTime()
+    : diesAt - 90 * 24 * 60 * 60 * 1000
+  const totalLifespan = diesAt - bornAt
   const remaining = diesAt - now
   const daysLeft = Math.max(0, Math.ceil(remaining / (1000 * 60 * 60 * 24)))
-  const lifePct = Math.max(0, Math.min(100, Math.round((remaining / totalLifespan) * 100)))
+  const lifePct = totalLifespan > 0
+    ? Math.max(0, Math.min(100, Math.round((remaining / totalLifespan) * 100)))
+    : Math.max(0, Math.min(100, Math.round((daysLeft / 90) * 100)))
   const xpPct = Math.round((pet.xp / pet.xp_to_next) * 100)
   const levelCost = LEVEL_COSTS[pet.current_level] || 99999
   const canLevelUp = pet.xp >= pet.xp_to_next &&
