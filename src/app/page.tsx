@@ -5,6 +5,7 @@ import { TelegramUser } from '@/types'
 import Tutorial from '@/components/game/Tutorial'
 import MainApp   from '@/components/game/MainApp'
 import LoadingScreen from '@/components/game/LoadingScreen'
+import DemoMode from '@/components/game/DemoMode'
 import { v4 as uuidv4 } from 'uuid'
 
 declare global {
@@ -133,6 +134,10 @@ export default function Home() {
   useEffect(() => {
     initApp()
   }, [initApp])
+
+  // Show demo if not in Telegram (browser direct access)
+  const isInTelegram = typeof window !== 'undefined' && !!window.Telegram?.WebApp?.initData
+  if (!isLoading && (initError || !user) && !isInTelegram) return <DemoMode />
 
   if (isLoading) return <LoadingScreen />
 
