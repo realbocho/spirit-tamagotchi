@@ -40,23 +40,18 @@ export async function POST(
       .eq('status', 'active')
       .single()
 
-    // If no session exists, use pet.created_at as the start time and claim immediately
+    // If no session exists, create one starting NOW (nothing to claim yet)
     if (!session) {
-      const sessionStart = pet.created_at ? new Date(pet.created_at).getTime() : now.getTime()
-      const hoursElapsed = (now.getTime() - sessionStart) / 3600000
-      const serverEarned = Math.floor(hoursElapsed * pet.base_mining_rate * 1.0)
-      const earned = serverEarned > 0 ? serverEarned : (clientMined && clientMined > 0 ? Math.floor(clientMined) : 0)
-
-      if (earned <= 0) return NextResponse.json({ error: 'Nothing to claim yet' }, { status: 400 })
-
-      const lockupEnds = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      await Promise.all([
-        supabase.from('mining_sessions').insert({ id: uuidv4(), pet_id: pet.id, user_id: userId, started_at: now.toISOString(), amount: 0, multiplier: 1.0, status: 'active' }),
-        supabase.from('pending_withdrawals').insert({ id: uuidv4(), user_id: userId, pet_id: pet.id, amount: earned, lockup_ends_at: lockupEnds, status: 'locked', created_at: now.toISOString() }),
-        supabase.rpc('add_mudang_balance', { p_user_id: userId, p_amount: earned }),
-        supabase.from('pets').update({ total_mined: pet.total_mined + earned, updated_at: now.toISOString() }).eq('id', pet.id),
-      ])
-      return NextResponse.json({ claimed: earned, locked_until: lockupEnds, level_up: false, new_level: pet.current_level })
+      await supabase.from('mining_sessions').insert({
+        id: uuidv4(),
+        pet_id: pet.id,
+        user_id: userId,
+        started_at: now.toISOString(),
+        amount: 0,
+        multiplier: 1.0,
+        status: 'active',
+      })
+      return NextResponse.json({ error: 'Nothing to claim yet' }, { status: 400 })
     }
 
     // Calculate earned amount (server-side)
@@ -64,8 +59,13 @@ export async function POST(
     const hoursElapsed = (now.getTime() - sessionStart.getTime()) / 3600000
     const serverEarned = Math.floor(hoursElapsed * pet.base_mining_rate * session.multiplier)
 
-    // Use server calculation; if 0 but client shows > 0, trust client (rounding edge case)
-    const earned = serverEarned > 0 ? serverEarned : (clientMined && clientMined > 0 ? Math.floor(clientMined) : 0)
+    // Use server calculation as source of truth
+    // Only use clientMined as fallback when serverEarned is 0 (< 1 minute sessions)
+    // Cap clientMined to max 2x serverEarned to prevent manipulation
+    const maxAllowed = serverEarned > 0 ? serverEarned * 2 : pet.base_mining_rate // max 1hr if no server data
+    const earned = serverEarned > 0
+      ? serverEarned
+      : (clientMined && clientMined > 0 && clientMined <= maxAllowed ? Math.floor(clientMined) : 0)
 
     console.log('[claim] hoursElapsed:', hoursElapsed, 'rate:', pet.base_mining_rate, 'multiplier:', session.multiplier, 'serverEarned:', serverEarned, 'clientMined:', clientMined, 'earned:', earned)
 
