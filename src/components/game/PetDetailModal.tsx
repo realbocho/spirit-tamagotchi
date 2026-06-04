@@ -57,7 +57,7 @@ export default function PetDetailModal({ pet, onClose, onPetUpdated }: Props) {
     : diesAt - 90 * 24 * 60 * 60 * 1000
   const totalLifespan = diesAt - bornAt
   const remaining = diesAt - now
-  const daysLeft = Math.max(0, Math.ceil(remaining / (1000 * 60 * 60 * 24)))
+  const daysLeft = Math.max(0, Math.floor(remaining / (1000 * 60 * 60 * 24)))
   const lifePct = totalLifespan > 0
     ? Math.max(0, Math.min(100, Math.round((remaining / totalLifespan) * 100)))
     : Math.max(0, Math.min(100, Math.round((daysLeft / 90) * 100)))
