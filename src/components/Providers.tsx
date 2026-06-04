@@ -1,6 +1,7 @@
 'use client'
 import { TonConnectUIProvider } from '@tonconnect/ui-react'
 import { Toaster } from 'react-hot-toast'
+import TelegramAnalytics from './TelegramAnalytics'
 
 const MANIFEST_URL =
   typeof window !== 'undefined' && window.location
@@ -13,6 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TonConnectUIProvider manifestUrl={MANIFEST_URL}>
       {children}
+      <TelegramAnalytics />
       <Toaster
         position="top-center"
         toastOptions={{
