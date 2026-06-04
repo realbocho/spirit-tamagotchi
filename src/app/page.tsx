@@ -112,6 +112,9 @@ export default function Home() {
         fortuneRes.json(),
       ])
 
+      // Set user from auth response (DB fresh value)
+      setUser(data.user)
+
       if (petsData.pets?.length) {
         setAllPets(petsData.pets)
         const alive = petsData.pets.find((p: any) => p.status === 'alive') || petsData.pets[0]
