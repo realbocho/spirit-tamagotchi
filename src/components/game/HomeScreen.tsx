@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 // src/components/game/HomeScreen.tsx
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const { user, activePet, todayFortune, updatePet } = useAppStore()
   const [minedAmount, setMinedAmount] = useState(0)
   const [isClaiming, setIsClaiming] = useState(false)
+  const justClaimedRef = React.useRef(false)
   const [showCrisis, setShowCrisis] = useState(false)
   const [showPetDetail, setShowPetDetail] = useState(false)
 
@@ -37,6 +39,7 @@ export default function HomeScreen() {
     if (!activePet || !user || activePet.status !== 'alive') return
 
     const fetchMined = () => {
+      if (justClaimedRef.current) return // skip poll right after claim
       fetch(`/api/pets/mined?petId=${activePet.id}&userId=${user.id}`)
         .then(r => r.json())
         .then(d => { if (typeof d.mined === 'number') setMinedAmount(d.mined) })
@@ -84,6 +87,8 @@ export default function HomeScreen() {
         })
       }
       setMinedAmount(0)
+      justClaimedRef.current = true
+      setTimeout(() => { justClaimedRef.current = false }, 3000)
 
     } catch (err: any) {
       toast.error(err.message || 'Failed to claim')
