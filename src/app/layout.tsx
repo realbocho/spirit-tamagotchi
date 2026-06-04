@@ -23,6 +23,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
+        {/* Telegram Mini Apps Analytics SDK */}
+        <Script
+          src="https://tganalytics.xyz/index.js"
+          data-telegram-analytics-key="eyJhcHBfbmFtZSI6Im9yaWVudGFsX2ZvcnR1bmVfdGFtYWdvdGNoaSIsImFwcF91cmwiOiJodHRwczovL3QubWUvT3JpZW50YWxfZm9ydHVuZV9UYW1hZ290Y2hpX2JvdCIsImFwcF9kb21haW4iOiJodHRwczovL3NwaXJpdC10YW1hZ290Y2hpLnZlcmNlbC5hcHAvIn0=!lkTpbpqy/D56K6Pvhu6DG4CQDWFEMdM5DntvsWdrpXE="
+          strategy="afterInteractive"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
           rel="stylesheet"
