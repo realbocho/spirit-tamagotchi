@@ -39,12 +39,17 @@ export default function HomeScreen() {
     fetch(`/api/pets/session?petId=${activePet.id}&userId=${user.id}`)
       .then(r => r.json())
       .then(d => {
-        if (d.started_at) {
-          setSessionStartedAt(new Date(d.started_at).getTime())
-        } else {
-          // No session yet — use now as fallback
-          setSessionStartedAt(Date.now())
-        }
+        const rawStart = d.started_at ? new Date(d.started_at).getTime() : Date.now()
+        // Guard: if session start is in the future or more than 90 days ago, use now
+        const now = Date.now()
+        const maxPast = 90 * 24 * 60 * 60 * 1000
+        const startedAt = (rawStart > now || now - rawStart > maxPast) ? now : rawStart
+        setSessionStartedAt(startedAt)
+        // Set initial mined amount from session start
+        const multiplier = d.multiplier || 1.0
+        const ratePerMs = (activePet.base_mining_rate * multiplier) / 3600000
+        const elapsed = Math.max(0, now - startedAt)
+        setMinedAmount(Math.floor(elapsed * ratePerMs))
       })
       .catch(() => setSessionStartedAt(Date.now()))
   }, [activePet?.id, user?.id])
@@ -261,7 +266,7 @@ export default function HomeScreen() {
             animate={{ boxShadow: minedAmount > 0 ? '0 0 20px rgba(212,175,55,0.15)' : 'none' }}
           >
             <div className="text-center mb-3">
-              <div className="font-cjk text-smoke/50 text-xs mb-1">採掘量</div>
+              <div className="text-smoke/50 text-xs mb-1">Mined</div>
               <div className="mining-counter text-2xl">
                 +{minedAmount.toLocaleString()} $MUD
               </div>
@@ -278,7 +283,7 @@ export default function HomeScreen() {
                   ? 'btn-ritual'
                   : 'bg-smoke/10 text-smoke/40 cursor-not-allowed'}`}
             >
-              {isClaiming ? 'Claiming...' : minedAmount > 0 ? '⛏ Claim $MUDANG' : 'Mining in progress...'}
+              {isClaiming ? 'Claiming...' : minedAmount > 0 ? `⛏ Claim ${minedAmount.toLocaleString()} $MUDANG` : 'Mining in progress...'}
             </button>
           </motion.div>
         )}
