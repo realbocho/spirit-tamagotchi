@@ -114,10 +114,13 @@ export default function HomeScreen() {
   const lifetimeProgress = activePet
     ? (() => {
         const diesAt = new Date(activePet.dies_at).getTime()
-        const bornAt = new Date(activePet.born_at).getTime()
+        const bornAt = activePet.born_at
+          ? new Date(activePet.born_at).getTime()
+          : diesAt - 90 * 24 * 60 * 60 * 1000
         const total = diesAt - bornAt
         const remaining = diesAt - Date.now()
-        return total > 0 ? Math.max(0, Math.min(1, 1 - remaining / total)) : 0
+        // remaining/total = fraction LEFT (100% = full life, 0% = dead)
+        return total > 0 ? Math.max(0, Math.min(1, remaining / total)) : 0
       })()
     : 0
 
@@ -130,7 +133,7 @@ export default function HomeScreen() {
       {/* Header */}
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div>
-          <div className="font-cjk text-gold/50 text-xs">今日運勢</div>
+          <div className="text-smoke/50 text-xs tracking-wide">Today's Fortune</div>
           {todayFortune ? (
             <div className={`font-display text-sm font-semibold ${FORTUNE_COLORS[todayFortune.label]}`}>
               {FORTUNE_LABELS[todayFortune.label as keyof typeof FORTUNE_LABELS]}
@@ -140,7 +143,7 @@ export default function HomeScreen() {
           )}
         </div>
         <div className="text-right">
-          <div className="font-cjk text-smoke/50 text-xs">餘命</div>
+          <div className="text-smoke/50 text-xs">Lifespan</div>
           <div className={`font-mono text-sm ${daysRemaining <= 10 ? 'text-vermil-light' : 'text-paper'}`}>
             {daysRemaining}d left
           </div>
