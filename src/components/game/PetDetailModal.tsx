@@ -49,13 +49,13 @@ export default function PetDetailModal({ pet, onClose, onPetUpdated }: Props) {
   const { user, setUser } = useAppStore()
   const [leveling, setLeveling] = useState(false)
 
-  const daysLeft = Math.max(0, Math.ceil(
-    (new Date(pet.dies_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  ))
-  const lifePct = Math.max(0, Math.round(
-    (new Date(pet.dies_at).getTime() - Date.now()) /
-    (90 * 24 * 60 * 60 * 1000) * 100
-  ))
+  const now = Date.now()
+  const diesAt = new Date(pet.dies_at).getTime()
+  const bornAt = new Date(pet.born_at).getTime()
+  const totalLifespan = diesAt - bornAt  // actual lifespan in ms
+  const remaining = diesAt - now
+  const daysLeft = Math.max(0, Math.ceil(remaining / (1000 * 60 * 60 * 24)))
+  const lifePct = Math.max(0, Math.min(100, Math.round((remaining / totalLifespan) * 100)))
   const xpPct = Math.round((pet.xp / pet.xp_to_next) * 100)
   const levelCost = LEVEL_COSTS[pet.current_level] || 99999
   const canLevelUp = pet.xp >= pet.xp_to_next &&
