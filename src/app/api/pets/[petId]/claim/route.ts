@@ -40,19 +40,40 @@ export async function POST(
       .eq('status', 'active')
       .single()
 
-    // If no session, create one and return
+    // If no session, create one using pet creation time as start
     if (!session) {
-      const { v4: uuidv4 } = await import('uuid')
+      const sessionStart = pet.created_at || now.toISOString()
       await supabase.from('mining_sessions').insert({
         id: uuidv4(),
         pet_id: pet.id,
         user_id: userId,
-        started_at: now.toISOString(),
+        started_at: sessionStart,
         amount: 0,
         multiplier: 1.0,
         status: 'active',
       })
-      return NextResponse.json({ error: 'Mining session just created — try again in a moment' }, { status: 400 })
+      // Re-fetch the newly created session
+      const { data: newSession } = await supabase
+        .from('mining_sessions')
+        .select('*')
+        .eq('pet_id', pet.id)
+        .eq('status', 'active')
+        .single()
+      if (!newSession) return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
+      // Use new session
+      const hoursElapsed = (now.getTime() - new Date(sessionStart).getTime()) / 3600000
+      const earned = Math.max(
+        Math.floor(hoursElapsed * pet.base_mining_rate * 1.0),
+        clientMined && clientMined > 0 ? Math.floor(clientMined) : 0
+      )
+      if (earned <= 0) return NextResponse.json({ error: 'Nothing to claim yet' }, { status: 400 })
+
+      await supabase.from('mining_sessions').update({ status: 'claimed', claimed_at: now.toISOString(), amount: earned }).eq('id', newSession.id)
+      await supabase.from('mining_sessions').insert({ id: uuidv4(), pet_id: pet.id, user_id: userId, started_at: now.toISOString(), amount: 0, multiplier: 1.0, status: 'active' })
+      await supabase.from('pending_withdrawals').insert({ id: uuidv4(), user_id: userId, pet_id: pet.id, amount: earned, lockup_ends_at: new Date(now.getTime() + 7*24*60*60*1000).toISOString(), status: 'locked', created_at: now.toISOString() })
+      await supabase.rpc('add_mudang_balance', { p_user_id: userId, p_amount: earned })
+      await supabase.from('pets').update({ total_mined: pet.total_mined + earned, updated_at: now.toISOString() }).eq('id', pet.id)
+      return NextResponse.json({ claimed: earned, locked_until: new Date(now.getTime() + 7*24*60*60*1000).toISOString(), level_up: false, new_level: pet.current_level })
     }
 
     // Calculate earned amount (server-side)
