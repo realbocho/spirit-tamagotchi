@@ -31,44 +31,22 @@ export default function HomeScreen() {
   const [isClaiming, setIsClaiming] = useState(false)
   const [showCrisis, setShowCrisis] = useState(false)
   const [showPetDetail, setShowPetDetail] = useState(false)
-  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
 
-  // Fetch active mining session start time from DB on mount
+  // Poll DB every 1s — same calculation as server, no client-side guessing
   useEffect(() => {
-    if (!activePet || !user) return
-    fetch(`/api/pets/session?petId=${activePet.id}&userId=${user.id}`)
-      .then(r => r.json())
-      .then(d => {
-        const rawStart = d.started_at ? new Date(d.started_at).getTime() : Date.now()
-        // Guard: if session start is in the future or more than 90 days ago, use now
-        const now = Date.now()
-        const maxPast = 90 * 24 * 60 * 60 * 1000
-        const startedAt = (rawStart > now || now - rawStart > maxPast) ? now : rawStart
-        setSessionStartedAt(startedAt)
-        // Set initial mined amount from session start
-        const multiplier = d.multiplier || 1.0
-        const ratePerMs = (activePet.base_mining_rate * multiplier) / 3600000
-        const hoursElapsed = Math.max(0, now - startedAt) / 3600000
-        setMinedAmount(Math.floor(hoursElapsed * activePet.base_mining_rate * multiplier))
-      })
-      .catch(() => setSessionStartedAt(Date.now()))
-  }, [activePet?.id, user?.id])
+    if (!activePet || !user || activePet.status !== 'alive') return
 
-  // Real-time mining counter — based on DB session start time
-  useEffect(() => {
-    if (!activePet || activePet.status !== 'alive' || sessionStartedAt === null) return
-    const multiplier = todayFortune?.mining_multiplier || 1.0
-    const ratePerMs = (activePet.base_mining_rate * multiplier) / 3600000
+    const fetchMined = () => {
+      fetch(`/api/pets/mined?petId=${activePet.id}&userId=${user.id}`)
+        .then(r => r.json())
+        .then(d => { if (typeof d.mined === 'number') setMinedAmount(d.mined) })
+        .catch(() => {})
+    }
 
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - sessionStartedAt
-      // Use same formula as server: Math.floor(hoursElapsed * rate * multiplier)
-      const hoursElapsed = elapsed / 3600000
-      setMinedAmount(Math.floor(hoursElapsed * activePet.base_mining_rate * multiplier))
-    }, 1000)
-
+    fetchMined()
+    const interval = setInterval(fetchMined, 1000)
     return () => clearInterval(interval)
-  }, [activePet, todayFortune, sessionStartedAt])
+  }, [activePet?.id, activePet?.status, user?.id])
 
   // Show crisis if pet is cursed
   useEffect(() => {
