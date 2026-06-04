@@ -32,13 +32,15 @@ export async function POST(
       return NextResponse.json({ error: 'Pet has reached end of life. Perform 薦度齋 (Transcendence).' }, { status: 400 })
     }
 
-    // Get active mining session
-    const { data: session } = await supabase
+    // Get active mining session (use limit+maybeSingle to avoid error on multiple rows)
+    const { data: sessionRows } = await supabase
       .from('mining_sessions')
       .select('*')
       .eq('pet_id', pet.id)
       .eq('status', 'active')
-      .single()
+      .order('started_at', { ascending: false })
+      .limit(1)
+    const session = sessionRows?.[0] || null
 
     // If no session exists, create one starting NOW (nothing to claim yet)
     if (!session) {
@@ -63,13 +65,14 @@ export async function POST(
     // Only use clientMined as fallback when serverEarned is 0 (< 1 minute sessions)
     // Cap clientMined to max 2x serverEarned to prevent manipulation
     const maxAllowed = serverEarned > 0 ? serverEarned * 2 : pet.base_mining_rate // max 1hr if no server data
+    // If server says 0 but client shows amount, trust client (short session < 1min or clock skew)
     const earned = serverEarned > 0
       ? serverEarned
-      : (clientMined && clientMined > 0 && clientMined <= maxAllowed ? Math.floor(clientMined) : 0)
+      : (clientMined && clientMined > 0 ? Math.min(Math.floor(clientMined), pet.base_mining_rate * 24) : 0)
 
-    console.log('[claim] hoursElapsed:', hoursElapsed, 'rate:', pet.base_mining_rate, 'multiplier:', session.multiplier, 'serverEarned:', serverEarned, 'clientMined:', clientMined, 'earned:', earned)
+    console.log('[claim] hoursElapsed:', hoursElapsed.toFixed(4), 'serverEarned:', serverEarned, 'clientMined:', clientMined, 'earned:', earned)
 
-    if (earned <= 0) return NextResponse.json({ error: 'Nothing to claim yet' }, { status: 400 })
+    if (earned <= 0) return NextResponse.json({ error: 'Nothing to claim yet — mine for a bit longer!' }, { status: 400 })
 
     // Apply 7-day lockup (stored in pending_withdrawals, can use immediately for in-game)
     const lockedAmount = earned
