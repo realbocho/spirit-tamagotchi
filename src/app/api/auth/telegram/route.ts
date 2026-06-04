@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (existingUser) {
-      const { data: updatedUser } = await supabase
+      await supabase
         .from('users')
         .update({
           last_active: new Date().toISOString(),
@@ -72,10 +72,15 @@ export async function POST(req: NextRequest) {
           ...(deviceUuid && !existingUser.device_uuid ? { device_uuid: deviceUuid } : {}),
         })
         .eq('id', existingUser.id)
-        .select()
+
+      // Re-fetch to get absolutely latest balance (avoid stale cache)
+      const { data: freshUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', existingUser.id)
         .single()
 
-      return NextResponse.json({ user: updatedUser || existingUser })
+      return NextResponse.json({ user: freshUser || existingUser })
     }
 
     // New user
