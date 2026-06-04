@@ -106,7 +106,7 @@ export default function HomeScreen() {
         })
       }
       setMinedAmount(0)
-      setSessionStartedAt(Date.now())
+
     } catch (err: any) {
       toast.error(err.message || 'Failed to claim')
     } finally {
