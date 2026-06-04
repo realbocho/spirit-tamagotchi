@@ -108,7 +108,7 @@ export default function HomeScreen() {
   }, [activePet, user, isClaiming])
 
   const daysRemaining = activePet
-    ? Math.max(0, Math.floor((new Date(activePet.dies_at).getTime() - Date.now()) / 86400000))
+    ? (() => { const ms = new Date(activePet.dies_at).getTime() - Date.now(); return Math.max(0, ms > 0 ? Math.floor(ms / 86400000) : 0) })()
     : 0
 
   const lifetimeProgress = activePet
