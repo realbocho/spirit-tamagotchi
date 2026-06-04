@@ -48,8 +48,8 @@ export default function HomeScreen() {
         // Set initial mined amount from session start
         const multiplier = d.multiplier || 1.0
         const ratePerMs = (activePet.base_mining_rate * multiplier) / 3600000
-        const elapsed = Math.max(0, now - startedAt)
-        setMinedAmount(Math.floor(elapsed * ratePerMs))
+        const hoursElapsed = Math.max(0, now - startedAt) / 3600000
+        setMinedAmount(Math.floor(hoursElapsed * activePet.base_mining_rate * multiplier))
       })
       .catch(() => setSessionStartedAt(Date.now()))
   }, [activePet?.id, user?.id])
@@ -62,7 +62,9 @@ export default function HomeScreen() {
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - sessionStartedAt
-      setMinedAmount(Math.floor(elapsed * ratePerMs))
+      // Use same formula as server: Math.floor(hoursElapsed * rate * multiplier)
+      const hoursElapsed = elapsed / 3600000
+      setMinedAmount(Math.floor(hoursElapsed * activePet.base_mining_rate * multiplier))
     }, 1000)
 
     return () => clearInterval(interval)
